@@ -200,7 +200,8 @@ int main(int argc, char *argv[]) {
       scan_msg->range_min = scan.config.min_range;
       scan_msg->range_max = scan.config.max_range;
       
-      int size = (scan.config.max_angle - scan.config.min_angle)/ scan.config.angle_increment + 1;
+      //int size = (scan.config.max_angle - scan.config.min_angle)/ scan.config.angle_increment + 1;
+      int size = std::round((scan.config.max_angle - scan.config.min_angle) / scan.config.angle_increment) + 1;
       scan_msg->ranges.resize(size);
       scan_msg->intensities.resize(size);
       for(size_t i=0; i < scan.points.size(); i++) {

@@ -1,0 +1,14 @@
+# Output prefix must be a new absolute path on the LIMO computer.
+string output_prefix
+bool allow_margin_retry
+float64 max_duration_sec
+---
+bool success
+bool exploration_complete
+bool margin_retried
+string message
+string posegraph_prefix
+---
+string phase
+float64 elapsed_sec
+uint32 retry_count

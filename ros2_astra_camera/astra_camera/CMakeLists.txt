@@ -111,7 +111,7 @@ target_link_libraries(${PROJECT_NAME}
   Eigen3::Eigen
   glog::glog
   magic_enum::magic_enum
-  LibUVC::UVCShared
+  uvc
   -lOpenNI2
   -L${ORBBEC_OPENNI2_REDIST}
   )
@@ -134,7 +134,7 @@ target_link_libraries(list_devices_node
   Eigen3::Eigen
   glog::glog
   magic_enum::magic_enum
-  LibUVC::UVCShared
+  uvc
   -lOpenNI2
   -L${ORBBEC_OPENNI2_REDIST}
   ${PROJECT_NAME}
