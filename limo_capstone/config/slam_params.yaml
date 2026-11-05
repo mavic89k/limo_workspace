@@ -1,78 +1,94 @@
 slam_toolbox:
   ros__parameters:
 
-    # Plugin params
-    solver_plugin: solver_plugins::CeresSolver
-    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY
-    ceres_preconditioner: SCHUR_JACOBI
-    ceres_trust_strategy: LEVENBERG_MARQUARDT
-    ceres_dogleg_type: TRADITIONAL_DOGLEG
-    ceres_loss_function: None
+    # --------------------------------
+    # 1. 플러그인 및 수식(Solver) 설정
+    # --------------------------------
+    solver_plugin: solver_plugins::CeresSolver        # 구글에서 개발한 Ceres 비선형 최적화 라이브러리 사용
+    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY       # 행렬 풀이 방식 (속도와 정확성 밸런스)
+    ceres_preconditioner: SCHUR_JACOBI                # 최적화 전처리 기법
+    ceres_trust_strategy: LEVENBERG_MARQUARDT         # 오차를 줄이는 하강 알고리즘 종류
+    ceres_dogleg_type: TRADITIONAL_DOGLEG             # (Levenberg-Marquardt 대안 방식 설정 - 현재 사용 안 함)
+    ceres_loss_function: None                         # 노이즈를 걸러내는 손실 함수 (기본값)
 
-    # ROS Parameters
-    use_sim_time: false
-    odom_frame: odom
-    map_frame: map
-    base_frame: base_link
-    scan_topic: /scan
-    use_map_saver: true
-    mode: mapping #localization
+    # --------------------------------
+    # 2. ROS 프레임 및 통신 기본 설정
+    # --------------------------------
+    use_sim_time: false           # ★매우 중요★ 실제 로봇 구동 시 무조건 false. (TF 시간 지연 에러 방지용)
+    odom_frame: odom              # 바퀴 센서(오도메트리) 기준 좌표계
+    map_frame: map                # 완성되는 지도 기준 좌표계
+    base_frame: base_link         # 로봇 본체 중심 좌표계
+    scan_topic: /scan             # 라이다(Lidar) 데이터가 들어오는 토픽
+    use_map_saver: true           # 별도의 map_saver_cli 명령어로 지도를 저장할 수 있게 허용
+    mode: mapping                 # 현재 동작 모드 (mapping: 지도 작성, localization: 작성된 지도로 내 위치만 파악)
 
-    # if you'd like to immediately start continuing a map at a given pose
-    # or at the dock, but they are mutually exclusive, if pose is given
-    # will use pose
+    # (저장된 지도를 불러와서 매핑을 이어나갈 때 쓰는 설정 - 현재는 주석 처리됨)
     #map_file_name: test_steve
-    # map_start_pose: [0.0, 0.0, 0.0]
+    #map_start_pose: [0.0, 0.0, 0.0]
     #map_start_at_dock: true
 
-    debug_logging: false
-    throttle_scans: 1
-    transform_publish_period: 0.02 #if 0 never publishes odometry
-    map_update_interval: 1.0
-    resolution: 0.05
-    min_laser_range: 0.12 #for rastering images
-    max_laser_range: 10.0          # 20.0 -> 10.0 (라이다 한계 밖의 노이즈 광선 반사 제거)
-    minimum_time_interval: 0.5
-    transform_timeout: 0.8
-    tf_buffer_duration: 30.
-    stack_size_to_use: 40000000 #// program needs a larger stack size to serialize large maps
-    enable_interactive_mode: true
+    # --------------------------------
+    # 3. 지도 갱신 속도 및 센서 처리 범위
+    # --------------------------------
+    debug_logging: false          # 디버그용 텍스트 로그 출력 여부 (터미널 깔끔하게 유지 위해 false)
+    throttle_scans: 1             # 들어오는 라이다 스캔 데이터 중 몇 개를 걸러낼지 (1 = 1개 들어올 때 1개 다 씀, 안 거름)
+    transform_publish_period: 0.02 # TF(로봇 위치 좌표) 발행 주기. 0.02초(50Hz)마다 매끄럽게 위치 추정
+    map_update_interval: 1.0       # RViz 화면에 새로 그려진 지도가 업데이트되는 주기 (1초)
+    resolution: 0.05               # 맵 해상도. 1픽셀이 실제 5cm(0.05m) 크기에 해당
+    min_laser_range: 0.12          # 최소 라이다 인식 거리 (12cm 이내 물체는 로봇 부품(케이스 등)으로 간주하고 무시)
+    max_laser_range: 10.0          # ★중요★ 최대 라이다 인식 거리. (LIMO 한계 스펙에 맞춰 10m 넘는 노이즈 광선 컷)
+    minimum_time_interval: 0.5     # 스캔 데이터를 맵에 추가하기 위한 최소 시간 간격 (0.5초)
+    transform_timeout: 0.8         # ★중요★ 센서 시간 지연(Delay) 발생 시 에러 띄우기 전 기다려주는 여유 시간 (0.8초)
+    tf_buffer_duration: 30.        # 과거의 위치 데이터(TF)를 메모리에 보관하는 시간 (30초)
+    stack_size_to_use: 40000000    # 넓은 지도를 저장할 때 프로그램이 뻗지 않도록 메모리 스택 한도 크게 잡기
+    enable_interactive_mode: true  # RViz에서 상호작용(지도 부분 삭제 등) 기능 활성화
 
-    # General Parameters
-    use_scan_matching: true
-    use_scan_barycenter: true
-    minimum_travel_distance: 0.2
-    minimum_travel_heading: 0.2
-    scan_buffer_size: 20
-    scan_buffer_maximum_scan_distance: 10.0
-    link_match_minimum_response_fine: 0.1  
-    link_scan_maximum_distance: 1.5
-    loop_search_maximum_distance: 3.0
-    do_loop_closing: true 
-    loop_match_minimum_chain_size: 10           
-    loop_match_maximum_variance_coarse: 3.0  
-    loop_match_minimum_response_coarse: 0.35    
-    loop_match_minimum_response_fine: 0.45
+    # --------------------------------
+    # 4. 로봇 움직임에 따른 맵 갱신 조건 (그래프 노드 추가)
+    # --------------------------------
+    use_scan_matching: true        # 라이다 스캔을 겹쳐 보면서 이동 거리 추정(Scan Matching) 사용
+    use_scan_barycenter: true      # 스캔 데이터의 무게중심을 이용해 매칭 안정성 상승
+    minimum_travel_distance: 0.2   # 로봇이 20cm(0.2m) 이상 이동하면 맵 갱신 수행
+    minimum_travel_heading: 0.2    # 로봇이 약 11도(0.2 라디안) 이상 회전하면 맵 갱신 수행
+    scan_buffer_size: 20           # 지도 생성에 참조할 과거 스캔 개수
+    scan_buffer_maximum_scan_distance: 10.0 # 스캔 버퍼에서 참조할 최대 거리 반경 (10m)
+    link_match_minimum_response_fine: 0.1   # 센서 매칭 결과 점수가 0.1 이상일 때만 유효 이동으로 인정
+    link_scan_maximum_distance: 1.5         # 센서 매칭을 수행할 주변 그래프 노드 최대 거리
 
-    # Correlation Parameters - Correlation Parameters
-    correlation_search_space_dimension: 0.5
-    correlation_search_space_resolution: 0.01
-    correlation_search_space_smear_deviation: 0.1 
+    # --------------------------------
+    # 5. 루프 클로징 (공간 찌그러짐 보정)
+    # --------------------------------
+    do_loop_closing: true                       # 한 바퀴 돌았을 때 기존 위치와 겹쳐서 오차를 없애는 기능 활성화
+    loop_search_maximum_distance: 3.0           # 3m 반경 내에 예전에 방문했던 장소가 있는지 검색
+    loop_match_minimum_chain_size: 10           # 루프가 완성되었다고 확정 지을 최소 그래프 궤적 개수
+    loop_match_maximum_variance_coarse: 3.0     # 1차(대략적) 매칭 허용 분산값
+    loop_match_minimum_response_coarse: 0.35    # 1차(대략적) 매칭 최소 인정 점수
+    loop_match_minimum_response_fine: 0.45      # 2차(정밀) 매칭 최소 인정 점수
 
-    # Correlation Parameters - Loop Closure Parameters
-    loop_search_space_dimension: 8.0
-    loop_search_space_resolution: 0.05
-    loop_search_space_smear_deviation: 0.03
+    # --------------------------------
+    # 6. 상관관계 및 탐색 범위 파라미터 (매칭 정밀도)
+    # --------------------------------
+    correlation_search_space_dimension: 0.5     # 스캔 매칭 시 탐색할 공간 반경 크기
+    correlation_search_space_resolution: 0.01   # 탐색 시 위치 해상도 정밀도
+    correlation_search_space_smear_deviation: 0.1 # 스캔 데이터를 번지게(Smear) 하여 매칭 확률을 높임
 
-    # Scan Matcher Parameters
-    distance_variance_penalty: 0.5      
-    angle_variance_penalty: 1.0    
+    # --------------------------------
+    # 7. 루프 클로징 공간 탐색 파라미터
+    # --------------------------------
+    loop_search_space_dimension: 8.0            # 루프 클로징 후보군을 찾을 윈도우 크기
+    loop_search_space_resolution: 0.05          # 루프 클로징 탐색 해상도
+    loop_search_space_smear_deviation: 0.03     # 루프 클로징 번짐 효과 수치
 
-    fine_search_angle_offset: 0.00349     
-    coarse_search_angle_offset: 0.349   
-    coarse_angle_resolution: 0.0349        
-    minimum_angle_penalty: 0.9
-    minimum_distance_penalty: 0.5
-    use_response_expansion: true
-    min_pass_through: 2
-    occupancy_threshold: 0.1
+    # --------------------------------
+    # 8. 스캔 매칭 가중치 및 오차 페널티
+    # --------------------------------
+    distance_variance_penalty: 0.5       # 거리가 안 맞을 때 깎는 점수 (높을수록 빡빡함)
+    angle_variance_penalty: 1.0          # 각도가 안 맞을 때 깎는 점수 (회전에 더 민감하게 설정됨)
+    fine_search_angle_offset: 0.00349    # 정밀 매칭 시 각도 조정 단위 (약 0.2도)
+    coarse_search_angle_offset: 0.349    # 대략 매칭 시 각도 조정 단위 (약 20도)
+    coarse_angle_resolution: 0.0349      # 대략 매칭 시 해상도 (약 2도)
+    minimum_angle_penalty: 0.9           # 최소 각도 페널티 임계값
+    minimum_distance_penalty: 0.5        # 최소 거리 페널티 임계값
+    use_response_expansion: true         # 매칭 탐색 공간 동적 확장 기능 활성화
+    min_pass_through: 2                  # 동적 장애물(사람 등)을 맵에서 지우기 위한 광선 통과 횟수
+    occupancy_threshold: 0.1             # 라이다 광선이 맞았을 때 해당 픽셀을 "벽(장애물)"으로 판정하는 확률값
