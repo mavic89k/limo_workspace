@@ -59,7 +59,17 @@ def generate_launch_description():
         }.items()
     )
 
-    # 3. explore_lite 프론티어 탐색 노드 (수동 매핑 후 별도 실행을 위해 주석 유지)
+    # 3. base_footprint 정적 TF 브로드캐스터
+    #    Nav2 기본 설정이 base_footprint를 참조하는 경우를 대비해
+    #    base_link -> base_footprint 를 (x y z yaw pitch roll = 0) 동일 위치로 연결한다.
+    static_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='static_tf_pub',
+        arguments=['0', '0', '0', '0', '0', '0', 'base_link', 'base_footprint']
+    )
+
+    # 4. explore_lite 프론티어 탐색 노드
     #    프론티어(알려진 영역과 미지 영역의 경계)를 찾아 Nav2에 목표점을 자동 전송한다.
     #    ※ 현재는 아래 LaunchDescription에 포함되어 자동 실행된다.
     explore_node = Node(
@@ -68,16 +78,6 @@ def generate_launch_description():
         name='explore_node',   # explore.yaml 최상위 키(explore_node)와 반드시 일치해야 함
         parameters=[explore_params_file],
         output='screen'
-    )
-
-    # 4. base_footprint 정적 TF 브로드캐스터
-    #    Nav2 기본 설정이 base_footprint를 참조하는 경우를 대비해
-    #    base_link -> base_footprint 를 (x y z yaw pitch roll = 0) 동일 위치로 연결한다.
-    static_tf = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='static_tf_pub',
-        arguments=['0', '0', '0', '0', '0', '0', 'base_link', 'base_footprint']
     )
 
     # 실행할 구성요소 목록 (SLAM -> Nav2 -> TF -> 탐색 순)
