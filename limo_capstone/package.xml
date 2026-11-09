@@ -7,6 +7,14 @@
   <maintainer email="pcu@todo.todo">pcu</maintainer>
   <license>TODO: License declaration</license>
 
+  <depend>rclpy</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>std_srvs</depend>
+  <exec_depend>python3-numpy</exec_depend>
+
   <export>
     <build_type>ament_python</build_type>
   </export>

@@ -24,6 +24,7 @@ setup(
     license='Apache-2.0',
     entry_points={
         'console_scripts': [
+            'stall_detector_node = limo_capstone.stall_detector_node:main',
         ],
     },
 )
