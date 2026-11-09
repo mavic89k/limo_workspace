@@ -219,7 +219,7 @@ local_costmap:
         z_voxels: 16  # z 방향 복셀 개수
         max_obstacle_height: 2.0  # 인식할 최대 장애물 높이(m)
         mark_threshold: 0  # 장애물로 표시할 최소 복셀 수
-        observation_sources: scan  # 관측 소스 이름
+        observation_sources: scan depth_obstacles  # 관측 소스 이름 (2D 라이다 + 3D Depth 카메라 장애물)
         scan:
           topic: /scan  # 라이다 토픽
           max_obstacle_height: 2.0  # 이 높이 이하만 장애물로 처리
@@ -230,6 +230,17 @@ local_costmap:
           raytrace_min_range: 0.0  # 레이트레이싱 최소 거리
           obstacle_max_range: 2.5  # 이 거리(m) 이내의 장애물만 표시
           obstacle_min_range: 0.0  # 장애물 최소 거리
+        depth_obstacles:
+          topic: /depth_obstacles/points
+          data_type: "PointCloud2"
+          marking: True
+          clearing: True
+          min_obstacle_height: 0.02
+          max_obstacle_height: 0.40
+          obstacle_min_range: 0.20
+          obstacle_max_range: 2.50
+          raytrace_min_range: 0.0
+          raytrace_max_range: 3.0
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True  # 지도 토픽을 transient_local QoS로 구독 (늦게 켜져도 수신)
