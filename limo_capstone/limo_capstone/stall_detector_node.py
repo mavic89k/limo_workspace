@@ -116,6 +116,9 @@ class StallDetectorNode(Node):
         self.state = STATE_INITIALIZING
         self.pending_start_sim_t = None
         self.latched_sim_t = None
+        # True when a sensor FAILSAFE interrupted STALL_LATCHED/RECOVERING_REVERSE. Auto-recovery from
+        # that FAILSAFE must return to STALL_LATCHED (not NORMAL); only /stall_detector/reset_latch clears it.
+        self.latch_held = False
         self.zero_cmd_start_sim_t = None
         self.recovery_start_pose = None
         self.stall_direction = 1.0  # +1 forward stall, -1 reverse stall
@@ -255,6 +258,7 @@ class StallDetectorNode(Node):
         self.ready_since_sim_t = None
         self.pending_start_sim_t = None
         self.latched_sim_t = None
+        self.latch_held = False
         self.zero_cmd_start_sim_t = None
         self.operator_unlatch_count += 1
         resp.success = True
@@ -375,6 +379,8 @@ class StallDetectorNode(Node):
                 )
         elif scan_stale or lidar_stale or depth_fault or odom_fault:
             if self.state != STATE_FAILSAFE_SENSOR_TIMEOUT:
+                if self.state in (STATE_STALL_LATCHED, STATE_RECOVERING_REVERSE):
+                    self.latch_held = True
                 self.state = STATE_FAILSAFE_SENSOR_TIMEOUT
                 self.failsafe_event_count += 1
                 self.get_logger().error(
@@ -397,8 +403,13 @@ class StallDetectorNode(Node):
             if all(checks.values()) and not scan_stale and not lidar_stale and not odom_fault and not icp_degraded and depth_ok:
                 if not self.require_operator_unlatch:
                     if abs(cmd_vx) < 0.02 and abs(cmd_wz) < 0.02:
-                        self.state = STATE_NORMAL
-                        self.pending_start_sim_t = None
+                        if self.latch_held:
+                            # Sensors recovered, but the stall latch was active before the FAILSAFE:
+                            # keep output at 0 until the operator calls /stall_detector/reset_latch.
+                            self.state = STATE_STALL_LATCHED
+                        else:
+                            self.state = STATE_NORMAL
+                            self.pending_start_sim_t = None
 
         # 2. Evaluate Physical Stall Condition
         if self.state not in (STATE_FAILSAFE_SENSOR_TIMEOUT, STATE_FAILSAFE_ICP_DEGRADED):
