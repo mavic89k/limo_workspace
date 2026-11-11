@@ -30,8 +30,9 @@ from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, LogInfo, GroupAction, Shutdown
 from launch.conditions import IfCondition, UnlessCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, PythonExpression
 from launch_ros.actions import Node, SetRemap
+from launch_ros.substitutions import FindPackageShare
 from nav2_common.launch import RewrittenYaml
 
 
@@ -41,7 +42,6 @@ def generate_launch_description():
     pkg_limo_base = get_package_share_directory('limo_base')
     pkg_limo_desc = get_package_share_directory('limo_description')
     pkg_ydlidar = get_package_share_directory('ydlidar_ros2_driver')
-    pkg_camera = get_package_share_directory('astra_camera')
     pkg_nav2 = get_package_share_directory('nav2_bringup')
     pkg_slam = get_package_share_directory('slam_toolbox')
 
@@ -184,7 +184,10 @@ def generate_launch_description():
 
     # C. Orbbec DaBai Depth Camera Driver (Launched only when use_depth_camera is true)
     dabai_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(os.path.join(pkg_camera, 'launch', 'dabai.launch.py')),
+        # Resolved lazily (FindPackageShare) so a missing astra_camera package does not stop the launch
+        # when use_depth_camera:=false; the lookup only happens if the condition below is true.
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution([FindPackageShare('astra_camera'), 'launch', 'dabai.launch.py'])),
         condition=IfCondition(use_depth_camera)
     )
 
