@@ -14,6 +14,17 @@
   <depend>std_msgs</depend>
   <depend>std_srvs</depend>
   <exec_depend>python3-numpy</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>explore_lite</exec_depend>
+  <exec_depend>limo_base</exec_depend>
+  <exec_depend>limo_description</exec_depend>
+  <exec_depend>nav2_bringup</exec_depend>
+  <exec_depend>rtabmap_launch</exec_depend>
+  <exec_depend>slam_toolbox</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>ydlidar_ros2_driver</exec_depend>
 
   <export>
     <build_type>ament_python</build_type>
