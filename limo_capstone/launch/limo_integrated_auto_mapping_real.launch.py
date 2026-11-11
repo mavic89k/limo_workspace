@@ -99,7 +99,7 @@ def generate_launch_description():
     )
     declare_drive_mode = DeclareLaunchArgument(
         'drive_mode', default_value='diff',
-        description="Nav2 kinematics profile: 'diff' (4WD differential; stock BT with Spin/BackUp, "
+        description="Nav2 kinematics profile: 'diff' (4WD differential; no-reverse BT with Spin, "
                     "RPP rotate-to-heading) or 'ackermann' (no-reverse BT, no in-place rotation). "
                     "Must match the LIMO hardware motion_mode (/limo_status: 0 = four-wheel differential)."
     )
@@ -377,12 +377,12 @@ def generate_launch_description():
     # Do NOT add a global SetRemap('cmd_vel'): it is applied before node-level remaps and would
     # make velocity_smoother consume its own output (self-input loop) and publish straight to /cmd_vel.
     ackermann_bt = os.path.join(pkg_limo_capstone, 'config', 'navigate_to_pose_ackermann_no_reverse.xml')
-    stock_bt = '/opt/ros/humble/share/nav2_bt_navigator/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml'
+    diff_bt = os.path.join(pkg_limo_capstone, 'config', 'navigate_to_pose_diff_no_reverse.xml')
     nav2_params_file = RewrittenYaml(
         source_file=selected_nav2_params,
         param_rewrites={
             'bt_navigator.ros__parameters.default_nav_to_pose_bt_xml': PythonExpression([
-                "'", ackermann_bt, "' if '", drive_mode, "' == 'ackermann' else '", stock_bt, "'"]),
+                "'", ackermann_bt, "' if '", drive_mode, "' == 'ackermann' else '", diff_bt, "'"]),
             'controller_server.ros__parameters.FollowPath.use_rotate_to_heading': PythonExpression([
                 "'false' if '", drive_mode, "' == 'ackermann' else 'true'"]),
         },
