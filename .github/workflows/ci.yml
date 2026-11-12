@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, dev]
+  push:
+    branches: [main, dev]
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install YAML parser
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-yaml
+      - name: Check Python, XML and YAML syntax
+        run: |
+          /usr/bin/python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import subprocess
+          import xml.etree.ElementTree as ET
+
+          import yaml
+
+          files = subprocess.check_output(["git", "ls-files", "-z"])
+          counts = {"Python": 0, "XML": 0, "YAML": 0}
+          errors = 0
+          for filename in files.split(b"\0"):
+              if not filename:
+                  continue
+              path = Path(os.fsdecode(filename))
+              try:
+                  if path.suffix == ".py":
+                      counts["Python"] += 1
+                      compile(path.read_bytes(), str(path), "exec")
+                  elif path.suffix in {".xml", ".xacro"}:
+                      counts["XML"] += 1
+                      ET.parse(path)
+                  elif path.suffix in {".yaml", ".yml"}:
+                      counts["YAML"] += 1
+                      with path.open("rb") as stream:
+                          for _ in yaml.compose_all(stream, Loader=yaml.SafeLoader):
+                              pass
+              except (OSError, SyntaxError, ValueError, ET.ParseError, yaml.YAMLError) as error:
+                  print(f"{path}: {error}", flush=True)
+                  errors += 1
+
+          for language, count in counts.items():
+              print(f"{language}: {count} file(s) checked")
+          raise SystemExit(1 if errors else 0)
+          PY
+
+  colcon:
+    if: github.base_ref == 'dev' || github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-22.04
+    container: ros:humble-ros-base-jammy
+    timeout-minutes: 35
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install build and test dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential cmake git pkg-config python3-colcon-common-extensions \
+            libboost-thread-dev libgoogle-glog-dev libjpeg-dev libopencv-dev libusb-1.0-0-dev \
+            ros-humble-ament-cmake-gtest ros-humble-ament-cmake-cppcheck \
+            ros-humble-ament-cmake-cpplint ros-humble-ament-cmake-lint-cmake \
+            ros-humble-ament-cmake-uncrustify
+          rosdep update --rosdistro humble
+          # ament_python is a build type handled by colcon, with no Humble rosdep key.
+          rosdep install --from-paths . --ignore-src --rosdistro humble -y --skip-keys ament_python
+      - name: Build YDLidar SDK and libuvc
+        run: |
+          git init "$RUNNER_TEMP/ydlidar-sdk"
+          git -C "$RUNNER_TEMP/ydlidar-sdk" fetch --depth 1 \
+            https://github.com/YDLIDAR/YDLidar-SDK.git e008f32ed7477c6351b49e2215f8fc5a797b8959
+          git -C "$RUNNER_TEMP/ydlidar-sdk" checkout --detach FETCH_HEAD
+          cmake -S "$RUNNER_TEMP/ydlidar-sdk" -B "$RUNNER_TEMP/ydlidar-build" \
+            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/ros-deps"
+          cmake --build "$RUNNER_TEMP/ydlidar-build" --parallel 2
+          cmake --install "$RUNNER_TEMP/ydlidar-build"
+          cmake -S libuvc -B "$RUNNER_TEMP/libuvc-build" \
+            -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$RUNNER_TEMP/ros-deps"
+          cmake --build "$RUNNER_TEMP/libuvc-build" --parallel 2
+          cmake --install "$RUNNER_TEMP/libuvc-build"
+      - name: Build workspace
+        id: build
+        run: |
+          source /opt/ros/humble/setup.bash
+          export CMAKE_PREFIX_PATH="$RUNNER_TEMP/ros-deps${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}"
+          export CMAKE_BUILD_PARALLEL_LEVEL=2
+          colcon build --parallel-workers 2 --event-handlers console_direct+
+      - name: Run tests
+        run: |
+          source /opt/ros/humble/setup.bash
+          export LD_LIBRARY_PATH="$RUNNER_TEMP/ros-deps/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+          colcon test --parallel-workers 2 --event-handlers console_direct+ --return-code-on-test-failure
+      - name: Report test results
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: colcon test-result --verbose
+      - name: Upload build and test logs
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: humble-colcon-logs
+          path: |
+            log/
+            build/**/test_results/
+            build/**/pytest.xml
+            build/**/Testing/
+          if-no-files-found: ignore
