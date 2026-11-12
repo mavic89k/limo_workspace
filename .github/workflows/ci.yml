@@ -74,7 +74,7 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            build-essential cmake git pkg-config python3-colcon-common-extensions \
+            build-essential cmake git pkg-config python3-colcon-common-extensions wget \
             libboost-thread-dev libgoogle-glog-dev libjpeg-dev libopencv-dev libusb-1.0-0-dev \
             ros-humble-ament-cmake-gtest ros-humble-ament-cmake-cppcheck \
             ros-humble-ament-cmake-cpplint ros-humble-ament-cmake-lint-cmake \
