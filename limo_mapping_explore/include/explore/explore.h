@@ -74,92 +74,93 @@ namespace explore
  * @brief A class adhering to the robot_actions::Action interface that moves the
  * robot base to explore its environment.
  */
-class Explore : public rclcpp::Node
-{
+  class Explore: public rclcpp::Node
+  {
 public:
-  Explore();
-  ~Explore();
+    Explore();
+    ~Explore();
 
-  void start();
-  void stop(bool finished_exploring = false);
-  void resume();
+    void start();
+    void stop(bool finished_exploring = false);
+    void resume();
 
-  using NavigationGoalHandle =
-      rclcpp_action::ClientGoalHandle<nav2_msgs::action::NavigateToPose>;
+    using NavigationGoalHandle =
+      rclcpp_action::ClientGoalHandle < nav2_msgs::action::NavigateToPose >;
 
 private:
-  /**
-   * @brief  Make a global plan
-   */
-  void makePlan();
+    /**
+     * @brief  Make a global plan
+     */
+    void makePlan();
 
-  // /**
-  //  * @brief  Publish a frontiers as markers
-  //  */
-  void visualizeFrontiers(
-      const std::vector<frontier_exploration::Frontier>& frontiers);
+    // /**
+    //  * @brief  Publish a frontiers as markers
+    //  */
+    void visualizeFrontiers(
+      const std::vector < frontier_exploration::Frontier > & frontiers);
 
-  bool goalOnBlacklist(const geometry_msgs::msg::Point& goal);
+    bool goalOnBlacklist(const geometry_msgs::msg::Point & goal);
 
-  NavigationGoalHandle::SharedPtr navigation_goal_handle_;
-  // void
-  // goal_response_callback(std::shared_future<NavigationGoalHandle::SharedPtr>
-  // future);
-  void reachedGoal(const NavigationGoalHandle::WrappedResult& result,
-                   const geometry_msgs::msg::Point& frontier_goal);
+    NavigationGoalHandle::SharedPtr navigation_goal_handle_;
+    // void
+    // goal_response_callback(std::shared_future<NavigationGoalHandle::SharedPtr>
+    // future);
+    void reachedGoal(
+      const NavigationGoalHandle::WrappedResult & result,
+      const geometry_msgs::msg::Point & frontier_goal);
 
-  rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr
-      marker_array_publisher_;
+    rclcpp::Publisher < visualization_msgs::msg::MarkerArray > ::SharedPtr
+    marker_array_publisher_;
 
-  /**
-    * @brief Publisher for exploration status updates (see ExploreStatus.msg for status values)
-    */
-  rclcpp::Publisher<limo_mapping_explore_msgs::msg::ExploreStatus>::SharedPtr status_pub_;
+    /**
+      * @brief Publisher for exploration status updates (see ExploreStatus.msg for status values)
+      */
+    rclcpp::Publisher < limo_mapping_explore_msgs::msg::ExploreStatus > ::SharedPtr status_pub_;
 
-  rclcpp::Logger logger_;
-  tf2_ros::Buffer tf_buffer_;
-  tf2_ros::TransformListener tf_listener_;
+    rclcpp::Logger logger_;
+    tf2_ros::Buffer tf_buffer_;
+    tf2_ros::TransformListener tf_listener_;
 
-  Costmap2DClient costmap_client_;
-  rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SharedPtr
-      move_base_client_;
-  frontier_exploration::FrontierSearch search_;
-  rclcpp::TimerBase::SharedPtr exploring_timer_;
-  // rclcpp::TimerBase::SharedPtr oneshot_;
+    Costmap2DClient costmap_client_;
+    rclcpp_action::Client < nav2_msgs::action::NavigateToPose > ::SharedPtr
+    move_base_client_;
+    frontier_exploration::FrontierSearch search_;
+    rclcpp::TimerBase::SharedPtr exploring_timer_;
+    // rclcpp::TimerBase::SharedPtr oneshot_;
 
-  rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr resume_subscription_;
-  void resumeCallback(const std_msgs::msg::Bool::SharedPtr msg);
+    rclcpp::Subscription < std_msgs::msg::Bool > ::SharedPtr resume_subscription_;
+    void resumeCallback(const std_msgs::msg::Bool::SharedPtr msg);
 
-  std::vector<geometry_msgs::msg::Point> frontier_blacklist_;
-  geometry_msgs::msg::Point prev_goal_;
-  double prev_distance_;
-  rclcpp::Time last_progress_;
-  size_t last_markers_count_;
+    std::vector < geometry_msgs::msg::Point > frontier_blacklist_;
+    geometry_msgs::msg::Point prev_goal_;
+    double prev_distance_;
+    rclcpp::Time last_progress_;
+    size_t last_markers_count_;
 
-  geometry_msgs::msg::Pose initial_pose_;
-  void returnToInitialPose(void);
+    geometry_msgs::msg::Pose initial_pose_;
+    void returnToInitialPose(void);
 
-  // parameters
-  double planner_frequency_;
-  double potential_scale_, orientation_scale_, gain_scale_;
-  double progress_timeout_;
-  bool visualize_;
-  bool return_to_init_;
-  std::string robot_base_frame_;
-  bool resuming_ = false;
-  bool goal_active_{false};
-  rclcpp_action::GoalUUID active_goal_id_;
+    // parameters
+    double planner_frequency_;
+    double potential_scale_, orientation_scale_, gain_scale_;
+    double progress_timeout_;
+    bool visualize_;
+    bool return_to_init_;
+    std::string robot_base_frame_;
+    bool resuming_ = false;
+    bool goal_active_ {false};
+    rclcpp_action::GoalUUID active_goal_id_;
 
-  // Navigate-to-pose goals sent by THIS node that were accepted and have no
-  // result yet. stop() cancels only these, never other clients' goals.
-  std::vector<NavigationGoalHandle::SharedPtr> own_goal_handles_;
-  // Incremented by stop(). A goal accepted after stop() was called (its
-  // response arrived late) is cancelled on acceptance instead of being kept.
-  uint64_t goal_epoch_{0};
-  void trackGoal(const NavigationGoalHandle::SharedPtr& handle);
-  void forgetGoal(const rclcpp_action::GoalUUID& id);
-  void cancelOwnGoals();
-};
+    // Navigate-to-pose goals sent by THIS node that were accepted and have no
+    // result yet. stop() cancels only these, never other clients' goals.
+    std::vector < NavigationGoalHandle::SharedPtr > own_goal_handles_;
+    // Incremented by stop(). A goal accepted after stop() was called (its
+    // response arrived late) is cancelled on acceptance instead of being kept.
+    uint64_t goal_epoch_ {0};
+    void trackGoal(const NavigationGoalHandle::SharedPtr & handle);
+    void forgetGoal(const rclcpp_action::GoalUUID & id);
+    void cancelOwnGoals();
+  };
 }  // namespace explore
 
 #endif
