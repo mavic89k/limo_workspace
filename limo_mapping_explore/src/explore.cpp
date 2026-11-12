@@ -341,8 +341,14 @@ void Explore::makePlan()
       };
 
   send_goal_options.result_callback =
-      [this,
-       target_position](const NavigationGoalHandle::WrappedResult& result) {
+      [this, target_position,
+       send_epoch](const NavigationGoalHandle::WrappedResult& result) {
+        forgetGoal(result.goal_id);
+        if (send_epoch != goal_epoch_) {
+          // stop() ran after this goal was sent: its result must not replan
+          RCLCPP_DEBUG(logger_, "Ignoring result of a goal sent before stop()");
+          return;
+        }
         reachedGoal(result, target_position);
       };
   move_base_client_->async_send_goal(goal, send_goal_options);
@@ -376,8 +382,13 @@ void Explore::returnToInitialPose()
         trackGoal(goal_handle);
       };
   send_goal_options.result_callback =
-      [this](const NavigationGoalHandle::WrappedResult& result) {
+      [this, send_epoch](const NavigationGoalHandle::WrappedResult& result) {
         forgetGoal(result.goal_id);
+        if (send_epoch != goal_epoch_) {
+          // stop() ran after this goal was sent: do not report arrival
+          RCLCPP_DEBUG(logger_, "Ignoring return result of a goal sent before stop()");
+          return;
+        }
         if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
           auto status_msg = limo_mapping_explore_msgs::msg::ExploreStatus();
           status_msg.status = limo_mapping_explore_msgs::msg::ExploreStatus::RETURNED_TO_ORIGIN;
