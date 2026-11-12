@@ -105,13 +105,48 @@ jobs:
           export CMAKE_BUILD_PARALLEL_LEVEL=2
           colcon build --parallel-workers 2 --event-handlers console_direct+
       - name: Run tests
+        id: tests
         run: |
           source /opt/ros/humble/setup.bash
           export LD_LIBRARY_PATH="$RUNNER_TEMP/ros-deps/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
           colcon test --parallel-workers 2 --event-handlers console_direct+ --return-code-on-test-failure
       - name: Report test results
+        id: results
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
-        run: colcon test-result --verbose
+        run: colcon test-result --verbose | tee "$RUNNER_TEMP/colcon-test-results.txt"
+      - name: Write check summary
+        if: ${{ !cancelled() }}
+        env:
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
+          RESULT_OUTCOME: ${{ steps.results.outcome }}
+        run: |
+          {
+            printf '## ROS 2 Humble 검증\n\n'
+            printf '| 단계 | 결과 |\n| --- | --- |\n'
+            printf '| 빌드 | %s |\n' "${BUILD_OUTCOME:-skipped}"
+            printf '| 테스트 실행 | %s |\n' "${TEST_OUTCOME:-skipped}"
+            printf '| 테스트 결과 집계 | %s |\n' "${RESULT_OUTCOME:-skipped}"
+            report="$RUNNER_TEMP/colcon-test-results.txt"
+            if [[ -s "$report" ]]; then
+              printf '\n'
+              awk '/^Summary: / { print "**" $0 "**" }' "$report"
+              if grep -q '^- ' "$report"; then
+                printf '\n### 실패한 검사 및 파일\n\n'
+                printf '검사 그룹과 파일별 결과가 원래 집계에 함께 포함될 수 있습니다.\n\n'
+                printf '~~~text\n'
+                awk '/^build\// { section=$0; shown=0 }
+                     /^- / {
+                       if (!shown && section != "") print "\n" section
+                       shown=1
+                       print
+                     }' "$report"
+                printf '~~~\n'
+              fi
+            fi
+            printf '\n[실행 로그 및 아티팩트](%s/%s/actions/runs/%s)\n' \
+              "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID"
+          } >> "$GITHUB_STEP_SUMMARY"
       - name: Upload build and test logs
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
