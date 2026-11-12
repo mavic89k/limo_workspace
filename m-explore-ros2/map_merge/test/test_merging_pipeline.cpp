@@ -44,22 +44,22 @@
 #define private public
 #include <combine_grids/merging_pipeline.h>
 
-const std::array<const char*, 2> hector_maps = {
-    "map00.pgm",
-    "map05.pgm",
+const std::array<const char *, 2> hector_maps = {
+  "map00.pgm",
+  "map05.pgm",
 };
 
-const std::array<const char*, 2> gmapping_maps = {
-    "2011-08-09-12-22-52.pgm",
-    "2012-01-28-11-12-01.pgm",
+const std::array<const char *, 2> gmapping_maps = {
+  "2011-08-09-12-22-52.pgm",
+  "2012-01-28-11-12-01.pgm",
 };
 
 constexpr bool verbose_tests = false;
 
-#define EXPECT_VALID_GRID(grid)                                                \
-  ASSERT_TRUE(static_cast<bool>(grid));                                        \
-  EXPECT_TRUE(consistentData(*grid));                                          \
-  EXPECT_GT(grid->info.resolution, 0);                                         \
+#define EXPECT_VALID_GRID(grid) \
+  ASSERT_TRUE(static_cast<bool>(grid)); \
+  EXPECT_TRUE(consistentData(*grid)); \
+  EXPECT_GT(grid->info.resolution, 0); \
   EXPECT_TRUE(isIdentity(grid->info.origin.orientation))
 
 TEST(MergingPipeline, canStich0Grid)
@@ -135,7 +135,7 @@ TEST(MergingPipeline, estimationAccuracy)
   double tx = 0;
   double ty = 0;
   cv::Matx23d transform{std::cos(angle), -std::sin(angle), tx,
-                        std::sin(angle), std::cos(angle),  ty};
+    std::sin(angle), std::cos(angle), ty};
 
   auto map = loadMap(hector_maps[1]);
   combine_grids::MergingPipeline merger;
@@ -200,7 +200,7 @@ TEST(MergingPipeline, setTransformsInternal)
     merger.setTransforms(&transform, &transform + 1);
 
     ASSERT_EQ(merger.transforms_.size(), (long unsigned int) 1);
-    auto& transform_internal = merger.transforms_[0];
+    auto & transform_internal = merger.transforms_[0];
     // verify that transforms are the same in 2D
     tf2::Vector3 a[2] = {{1., 0., 1.}, {0., 1., 1.}};
     cv::Point3d b[2] = {{1., 0., 1.}, {0., 1., 1.}};
@@ -231,7 +231,7 @@ TEST(MergingPipeline, getTransformsInternal)
     auto transforms = merger.getTransforms();
     ASSERT_EQ(transforms.size(), (long unsigned int) 1);
     // output quaternion should be normalized
-    auto& q = transforms[0].rotation;
+    auto & q = transforms[0].rotation;
     EXPECT_DOUBLE_EQ(1., q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w);
 
     // verify that transforms are the same in 2D
@@ -278,7 +278,7 @@ TEST(MergingPipeline, emptyImageWithTransform)
 TEST(MergingPipeline, oneEmptyImage)
 {
   std::vector<nav_msgs::msg::OccupancyGrid::ConstSharedPtr> maps{nullptr,
-                                                    loadMap(gmapping_maps[0])};
+    loadMap(gmapping_maps[0])};
   combine_grids::MergingPipeline merger;
   merger.feed(maps.begin(), maps.end());
   merger.estimateTransforms();
@@ -302,7 +302,7 @@ TEST(MergingPipeline, knownInitPositions)
 
   for (size_t i = 0; i < 5; ++i) {
     std::vector<geometry_msgs::msg::Transform> transforms{randomTransform(),
-                                                     randomTransform()};
+      randomTransform()};
     merger.setTransforms(transforms.begin(), transforms.end());
     auto merged_grid = merger.composeGrids();
 
@@ -310,7 +310,7 @@ TEST(MergingPipeline, knownInitPositions)
   }
 }
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
   // ros::Time::init();
   // if (verbose_tests &&

@@ -14,7 +14,7 @@
 #include <atomic>
 #include <thread>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include <rclcpp/rclcpp.hpp>
 

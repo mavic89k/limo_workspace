@@ -18,7 +18,7 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
 "msg/LimoStatus.msg"
-DEPENDENCIES 
+DEPENDENCIES
 builtin_interfaces std_msgs)
 
 if(BUILD_TESTING)

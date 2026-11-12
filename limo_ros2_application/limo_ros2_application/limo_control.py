@@ -9,12 +9,12 @@ class LimoControl(Node):
 
     def __init__(self):
         super().__init__('limo_control')
-        
+
         # Setting for publisher of cmd velocity
         self.publisher_ = self.create_publisher(Twist, 'cmd_vel', 10)
         self.timer_period = 0.1  # seconds
         self.timer = self.create_timer(self.timer_period, self.timer_callback)
-        
+
         # Setting for subscriber of e_stop and lane_detection and slow down
         self.e_stop_subscription = self.create_subscription(
             Bool,
@@ -31,12 +31,12 @@ class LimoControl(Node):
             'slow_down',
             self.slow_down_callback,
             10)
-        
+
         # prevent from warning
         self.e_stop_subscription
         self.distance_subscription
         self.slow_down_subscription
-        
+
         # flag and input value of twisting
         self.e_stop_flag = False
         self.gap = 0
@@ -47,13 +47,13 @@ class LimoControl(Node):
         self.declare_parameter('p_gain', 0.007)
         self.declare_parameter('slow_down_ratio', 0.5)
 
-        self.default_speed =self.get_parameter('default_speed')
-        self.p_gain =self.get_parameter('p_gain')
-        self.slow_down_ratio =self.get_parameter('slow_down_ratio')
+        self.default_speed = self.get_parameter('default_speed')
+        self.p_gain = self.get_parameter('p_gain')
+        self.slow_down_ratio = self.get_parameter('slow_down_ratio')
 
     def e_stop_callback(self, msg):
         self.e_stop_flag = msg.data
-    
+
     def distance_callback(self, msg):
         self.gap = msg.data
 
@@ -67,16 +67,17 @@ class LimoControl(Node):
         msg.angular.z = self.gap * self.p_gain.value
 
         # if e_stop called
-        if self.e_stop_flag :
+        if self.e_stop_flag:
             msg.linear.x = 0.0
             msg.angular.z = 0.0
-        
+
         # if slow down called
         if self.slow_down_flag:
             msg.linear.x = msg.linear.x * self.slow_down_ratio.value
-        
+
         self.publisher_.publish(msg)
-        
+
+
 def main(args=None):
     rclpy.init(args=args)
 

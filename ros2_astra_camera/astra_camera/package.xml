@@ -19,6 +19,7 @@
   <depend>image_geometry</depend>
   <depend>image_publisher</depend>
   <depend>image_transport</depend>
+  <depend>magic_enum</depend>
   <depend>rclcpp_components</depend>
   <depend>rclcpp</depend>
   <depend>sensor_msgs</depend>

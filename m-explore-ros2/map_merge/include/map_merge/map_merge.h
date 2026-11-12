@@ -54,74 +54,77 @@
 
 namespace map_merge
 {
-struct MapSubscription {
-  // protects consistency of writable_map and readonly_map
-  // also protects reads and writes of shared_ptrs
-  std::mutex mutex;
+  struct MapSubscription
+  {
+    // protects consistency of writable_map and readonly_map
+    // also protects reads and writes of shared_ptrs
+    std::mutex mutex;
 
-  geometry_msgs::msg::Transform initial_pose;
-  nav_msgs::msg::OccupancyGrid::SharedPtr writable_map;
-  nav_msgs::msg::OccupancyGrid::ConstSharedPtr readonly_map;
+    geometry_msgs::msg::Transform initial_pose;
+    nav_msgs::msg::OccupancyGrid::SharedPtr writable_map;
+    nav_msgs::msg::OccupancyGrid::ConstSharedPtr readonly_map;
 
-  // ros::Subscriber map_sub;
-  // ros::Subscriber map_updates_sub;
-  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr map_sub;
-  rclcpp::Subscription<map_msgs::msg::OccupancyGridUpdate>::SharedPtr map_updates_sub;
-};
+    // ros::Subscriber map_sub;
+    // ros::Subscriber map_updates_sub;
+    rclcpp::Subscription < nav_msgs::msg::OccupancyGrid > ::SharedPtr map_sub;
+    rclcpp::Subscription < map_msgs::msg::OccupancyGridUpdate > ::SharedPtr map_updates_sub;
+  };
 
-class MapMerge : public rclcpp::Node
-{
+  class MapMerge: public rclcpp::Node
+  {
 private:
-  /* parameters */
-  double merging_rate_;
-  double discovery_rate_;
-  double estimation_rate_;
-  double confidence_threshold_;
-  std::string robot_map_topic_;
-  std::string robot_map_updates_topic_;
-  std::string robot_namespace_;
-  std::string world_frame_;
-  bool have_initial_poses_;
+    /* parameters */
+    double merging_rate_;
+    double discovery_rate_;
+    double estimation_rate_;
+    double confidence_threshold_;
+    std::string robot_map_topic_;
+    std::string robot_map_updates_topic_;
+    std::string robot_namespace_;
+    std::string world_frame_;
+    bool have_initial_poses_;
 
-  // publishing
-  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr merged_map_publisher_;
-  // maps robots namespaces to maps. does not own
-  std::unordered_map<std::string, MapSubscription*> robots_;
-  // owns maps -- iterator safe
-  std::forward_list<MapSubscription> subscriptions_;
-  size_t subscriptions_size_;
-  boost::shared_mutex subscriptions_mutex_;
-  combine_grids::MergingPipeline pipeline_;
-  std::mutex pipeline_mutex_;
+    // publishing
+    rclcpp::Publisher < nav_msgs::msg::OccupancyGrid > ::SharedPtr merged_map_publisher_;
+    // maps robots namespaces to maps. does not own
+    std::unordered_map < std::string, MapSubscription * > robots_;
+    // owns maps -- iterator safe
+    std::forward_list < MapSubscription > subscriptions_;
+    size_t subscriptions_size_;
+    boost::shared_mutex subscriptions_mutex_;
+    combine_grids::MergingPipeline pipeline_;
+    std::mutex pipeline_mutex_;
 
-  rclcpp::Logger logger_;
+    rclcpp::Logger logger_;
 
-  // timers
-  rclcpp::TimerBase::SharedPtr map_merging_timer_;
-  rclcpp::TimerBase::SharedPtr topic_subscribing_timer_;
-  rclcpp::TimerBase::SharedPtr pose_estimation_timer_;
+    // timers
+    rclcpp::TimerBase::SharedPtr map_merging_timer_;
+    rclcpp::TimerBase::SharedPtr topic_subscribing_timer_;
+    rclcpp::TimerBase::SharedPtr pose_estimation_timer_;
 
-  std::string robotNameFromTopic(const std::string& topic);
-  // bool isRobotMapTopic(const ros::master::TopicInfo& topic);
-  bool isRobotMapTopic(const std::string topic, std::string type);
-  bool getInitPose(const std::string& name, geometry_msgs::msg::Transform& pose);
+    std::string robotNameFromTopic(const std::string & topic);
+    // bool isRobotMapTopic(const ros::master::TopicInfo& topic);
+    bool isRobotMapTopic(const std::string topic, std::string type);
+    bool getInitPose(const std::string & name, geometry_msgs::msg::Transform & pose);
 
-  void fullMapUpdate(const nav_msgs::msg::OccupancyGrid::SharedPtr msg,
-                     MapSubscription& map);
-  void partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::SharedPtr msg,
-                        MapSubscription& map);
+    void fullMapUpdate(
+      const nav_msgs::msg::OccupancyGrid::SharedPtr msg,
+      MapSubscription & map);
+    void partialMapUpdate(
+      const map_msgs::msg::OccupancyGridUpdate::SharedPtr msg,
+      MapSubscription & map);
 
 public:
-  MapMerge();
+    MapMerge();
 
-  void topicSubscribing();
-  void mapMerging();
-  /**
-   * @brief Estimates initial positions of grids
-   * @details Relevant only if initial poses are not known
-   */
-  void poseEstimation();
-};
+    void topicSubscribing();
+    void mapMerging();
+    /**
+     * @brief Estimates initial positions of grids
+     * @details Relevant only if initial poses are not known
+     */
+    void poseEstimation();
+  };
 
 }  // namespace map_merge
 

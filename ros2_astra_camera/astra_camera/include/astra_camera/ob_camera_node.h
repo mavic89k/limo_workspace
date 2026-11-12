@@ -14,7 +14,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include <opencv2/opencv.hpp>
 #include <cv_bridge/cv_bridge.h>
