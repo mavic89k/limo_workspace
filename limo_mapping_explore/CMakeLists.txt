@@ -130,6 +130,23 @@ if(BUILD_TESTING)
     ${geometry_msgs_TARGETS}
   )
 
+  # frontier search and partial costmap update regression tests (PR #8 review)
+  ament_add_gtest(test_review_fixes
+    test/test_review_fixes.cpp
+    src/frontier_search.cpp
+    src/costmap_client.cpp)
+  target_include_directories(test_review_fixes PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+  target_link_libraries(test_review_fixes
+    ${geometry_msgs_TARGETS}
+    ${map_msgs_TARGETS}
+    ${nav_msgs_TARGETS}
+    nav2_costmap_2d::filters
+    rclcpp::rclcpp
+    tf2::tf2
+    tf2_ros::tf2_ros
+  )
+
 endif()
 
 ament_export_dependencies(

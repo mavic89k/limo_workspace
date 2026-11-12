@@ -229,7 +229,15 @@ void Explore::visualizeFrontiers(
 void Explore::makePlan()
 {
   // find frontiers
-  auto pose = costmap_client_.getRobotPose();
+  geometry_msgs::msg::Pose pose;
+  if (!costmap_client_.getRobotPose(pose)) {
+    // Robot pose unknown (TF lookup failed): do not search, send goals, report
+    // completion or return to origin on a made-up (0, 0) pose. Try again on the
+    // next planning cycle.
+    RCLCPP_WARN_THROTTLE(logger_, *this->get_clock(), 2000,
+                         "Robot pose unavailable, skipping this planning cycle");
+    return;
+  }
   // get frontiers sorted according to cost
   auto frontiers = search_.searchFrom(pose.position);
   RCLCPP_DEBUG(logger_, "found %lu frontiers", frontiers.size());
@@ -310,12 +318,22 @@ void Explore::makePlan()
   auto send_goal_options = rclcpp_action::Client<
       nav2_msgs::action::NavigateToPose>::SendGoalOptions();
 
+  const uint64_t send_epoch = goal_epoch_;
   send_goal_options.goal_response_callback =
-      [this](const NavigationGoalHandle::SharedPtr& goal_handle) {
+      [this, send_epoch](const NavigationGoalHandle::SharedPtr& goal_handle) {
+        if (send_epoch != goal_epoch_) {
+          // stop() was called after this goal was sent: do not keep it running
+          if (goal_handle) {
+            RCLCPP_DEBUG(logger_, "Goal accepted after stop; cancelling it");
+            move_base_client_->async_cancel_goal(goal_handle);
+          }
+          return;
+        }
         if (!goal_handle) {
           RCLCPP_ERROR(logger_, "Goal was REJECTED by the action server");
           goal_active_ = false;
         } else {
+          trackGoal(goal_handle);
           active_goal_id_ = goal_handle->get_goal_id();
           RCLCPP_DEBUG(logger_, "Goal ACCEPTED, uuid: %s",
             rclcpp_action::to_string(active_goal_id_).c_str());
@@ -345,8 +363,21 @@ void Explore::returnToInitialPose()
 
   auto send_goal_options =
       rclcpp_action::Client<nav2_msgs::action::NavigateToPose>::SendGoalOptions();
+  const uint64_t send_epoch = goal_epoch_;
+  send_goal_options.goal_response_callback =
+      [this, send_epoch](const NavigationGoalHandle::SharedPtr& goal_handle) {
+        if (!goal_handle) {
+          return;
+        }
+        if (send_epoch != goal_epoch_) {
+          move_base_client_->async_cancel_goal(goal_handle);
+          return;
+        }
+        trackGoal(goal_handle);
+      };
   send_goal_options.result_callback =
       [this](const NavigationGoalHandle::WrappedResult& result) {
+        forgetGoal(result.goal_id);
         if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
           auto status_msg = limo_mapping_explore_msgs::msg::ExploreStatus();
           status_msg.status = limo_mapping_explore_msgs::msg::ExploreStatus::RETURNED_TO_ORIGIN;
@@ -375,6 +406,7 @@ bool Explore::goalOnBlacklist(const geometry_msgs::msg::Point& goal)
 
 void Explore::reachedGoal(const NavigationGoalHandle::WrappedResult& result,
                           const geometry_msgs::msg::Point& frontier_goal) {
+  forgetGoal(result.goal_id);
   // discard stale callbacks from previously preempted goals
   if (result.goal_id != active_goal_id_) {
     return;
@@ -446,11 +478,38 @@ void Explore::stop(bool finished_exploring)
     status_pub_->publish(status_msg);
   }
 
-  move_base_client_->async_cancel_all_goals();
+  // Cancel only the goals this node sent (not other clients' goals), and make
+  // goals whose acceptance is still pending get cancelled when they arrive.
+  ++goal_epoch_;
+  cancelOwnGoals();
   exploring_timer_->cancel();
 
   if (return_to_init_ && finished_exploring) {
     returnToInitialPose();
+  }
+}
+
+void Explore::trackGoal(const NavigationGoalHandle::SharedPtr& handle)
+{
+  own_goal_handles_.push_back(handle);
+}
+
+void Explore::forgetGoal(const rclcpp_action::GoalUUID& id)
+{
+  own_goal_handles_.erase(
+      std::remove_if(own_goal_handles_.begin(), own_goal_handles_.end(),
+                     [&id](const NavigationGoalHandle::SharedPtr& h) {
+                       return h->get_goal_id() == id;
+                     }),
+      own_goal_handles_.end());
+}
+
+void Explore::cancelOwnGoals()
+{
+  auto handles = std::move(own_goal_handles_);
+  own_goal_handles_.clear();
+  for (const auto& handle : handles) {
+    move_base_client_->async_cancel_goal(handle);
   }
 }
 

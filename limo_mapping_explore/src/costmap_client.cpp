@@ -178,51 +178,71 @@ void Costmap2DClient::updatePartialMap(
   RCLCPP_DEBUG(node_.get_logger(), "received partial map update");
   global_frame_ = msg->header.frame_id;
 
-  if (msg->x < 0 || msg->y < 0) {
-    RCLCPP_DEBUG(node_.get_logger(),
-                 "negative coordinates, invalid update. x: %d, y: %d", msg->x,
-                 msg->y);
+  if (!copyPartialUpdate(costmap_, *msg, node_.get_logger())) {
     return;
   }
+}
 
-  size_t x0 = static_cast<size_t>(msg->x);
-  size_t y0 = static_cast<size_t>(msg->y);
-  size_t xn = msg->width + x0;
-  size_t yn = msg->height + y0;
+bool Costmap2DClient::copyPartialUpdate(
+    nav2_costmap_2d::Costmap2D& costmap,
+    const map_msgs::msg::OccupancyGridUpdate& msg,
+    const rclcpp::Logger& logger)
+{
+  if (msg.x < 0 || msg.y < 0) {
+    RCLCPP_DEBUG(logger, "negative coordinates, invalid update. x: %d, y: %d",
+                 msg.x, msg.y);
+    return false;
+  }
+
+  const size_t x0 = static_cast<size_t>(msg.x);
+  const size_t y0 = static_cast<size_t>(msg.y);
+  const size_t width = msg.width;
+  const size_t height = msg.height;
+  const size_t xn = width + x0;
+  const size_t yn = height + y0;
+
+  // the update must carry width * height cells, otherwise rows cannot be located
+  if (msg.data.size() < width * height) {
+    RCLCPP_WARN(logger,
+                "partial update data too short: %zu cells for %zu x %zu, "
+                "ignoring update",
+                msg.data.size(), width, height);
+    return false;
+  }
 
   // lock as we are accessing raw underlying map
-  auto* mutex = costmap_.getMutex();
+  auto* mutex = costmap.getMutex();
   std::lock_guard<nav2_costmap_2d::Costmap2D::mutex_t> lock(*mutex);
 
-  size_t costmap_xn = costmap_.getSizeInCellsX();
-  size_t costmap_yn = costmap_.getSizeInCellsY();
+  size_t costmap_xn = costmap.getSizeInCellsX();
+  size_t costmap_yn = costmap.getSizeInCellsY();
 
   if (xn > costmap_xn || x0 > costmap_xn || yn > costmap_yn ||
       y0 > costmap_yn) {
-    RCLCPP_WARN(node_.get_logger(),
+    RCLCPP_WARN(logger,
                 "received update doesn't fully fit into existing map, "
                 "only part will be copied. received: [%lu, %lu], [%lu, %lu] "
                 "map is: [0, %lu], [0, %lu]",
                 x0, xn, y0, yn, costmap_xn, costmap_yn);
   }
 
-  // update map with data
-  unsigned char* costmap_data = costmap_.getCharMap();
-  size_t i = 0;
+  // update map with data; the input index keeps the original row stride even
+  // when the right-hand columns are clipped
+  unsigned char* costmap_data = costmap.getCharMap();
   for (size_t y = y0; y < yn && y < costmap_yn; ++y) {
     for (size_t x = x0; x < xn && x < costmap_xn; ++x) {
-      size_t idx = costmap_.getIndex(x, y);
-      unsigned char cell_cost = static_cast<unsigned char>(msg->data[i]);
+      size_t idx = costmap.getIndex(x, y);
+      size_t in = (y - y0) * width + (x - x0);
+      unsigned char cell_cost = static_cast<unsigned char>(msg.data[in]);
       costmap_data[idx] = cost_translation_table__[cell_cost];
-      ++i;
     }
   }
+  return true;
 }
 
-geometry_msgs::msg::Pose Costmap2DClient::getRobotPose() const
+bool Costmap2DClient::getRobotPose(geometry_msgs::msg::Pose& pose) const
 {
   geometry_msgs::msg::PoseStamped robot_pose;
-  geometry_msgs::msg::Pose empty_pose;
   robot_pose.header.frame_id = robot_base_frame_;
   robot_pose.header.stamp = node_.now();
 
@@ -237,24 +257,25 @@ geometry_msgs::msg::Pose Costmap2DClient::getRobotPose() const
                           "No Transform available Error looking up robot pose: "
                           "%s\n",
                           ex.what());
-    return empty_pose;
+    return false;
   } catch (tf2::ConnectivityException& ex) {
     RCLCPP_ERROR_THROTTLE(node_.get_logger(), clk, 1000,
                           "Connectivity Error looking up robot pose: %s\n",
                           ex.what());
-    return empty_pose;
+    return false;
   } catch (tf2::ExtrapolationException& ex) {
     RCLCPP_ERROR_THROTTLE(node_.get_logger(), clk, 1000,
                           "Extrapolation Error looking up robot pose: %s\n",
                           ex.what());
-    return empty_pose;
+    return false;
   } catch (tf2::TransformException& ex) {
     RCLCPP_ERROR_THROTTLE(node_.get_logger(), clk, 1000, "Other error: %s\n",
                           ex.what());
-    return empty_pose;
+    return false;
   }
 
-  return robot_pose.pose;
+  pose = robot_pose.pose;
+  return true;
 }
 
 std::array<unsigned char, 256> init_translation_table()

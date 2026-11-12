@@ -121,6 +121,16 @@ Frontier FrontierSearch::buildNewFrontier(unsigned int initial_cell,
   costmap_->indexToCells(reference, rx, ry);
   costmap_->mapToWorld(rx, ry, reference_x, reference_y);
 
+  // the initial cell is part of the frontier too: count it in points, centroid,
+  // min_distance and middle (size already starts at 1)
+  output.points.push_back(output.initial);
+  output.centroid.x += output.initial.x;
+  output.centroid.y += output.initial.y;
+  output.min_distance = sqrt(pow(reference_x - output.initial.x, 2.0) +
+                             pow(reference_y - output.initial.y, 2.0));
+  output.middle.x = output.initial.x;
+  output.middle.y = output.initial.y;
+
   while (!bfs.empty()) {
     unsigned int idx = bfs.front();
     bfs.pop();

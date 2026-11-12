@@ -44,13 +44,16 @@
 #include <tf2_ros/transform_listener.hpp>
 
 #include <chrono>
+#include <algorithm>
 #include <cmath>
+#include <cstdint>
 #include <limo_mapping_explore_msgs/msg/explore_status.hpp>
 #include <geometry_msgs/msg/point.hpp>
 #include <rclcpp/rclcpp.hpp>
 #include <std_msgs/msg/bool.hpp>
 #include <std_msgs/msg/color_rgba.hpp>
 #include <string>
+#include <vector>
 #include <visualization_msgs/msg/marker_array.hpp>
 
 #include "nav2_msgs/action/navigate_to_pose.hpp"
@@ -146,6 +149,16 @@ private:
   bool resuming_ = false;
   bool goal_active_{false};
   rclcpp_action::GoalUUID active_goal_id_;
+
+  // Navigate-to-pose goals sent by THIS node that were accepted and have no
+  // result yet. stop() cancels only these, never other clients' goals.
+  std::vector<NavigationGoalHandle::SharedPtr> own_goal_handles_;
+  // Incremented by stop(). A goal accepted after stop() was called (its
+  // response arrived late) is cancelled on acceptance instead of being kept.
+  uint64_t goal_epoch_{0};
+  void trackGoal(const NavigationGoalHandle::SharedPtr& handle);
+  void forgetGoal(const rclcpp_action::GoalUUID& id);
+  void cancelOwnGoals();
 };
 }  // namespace explore
 

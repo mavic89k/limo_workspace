@@ -66,9 +66,22 @@ public:
   Costmap2DClient(rclcpp::Node& node, const tf2_ros::Buffer* tf_listener);
   /**
    * @brief Get the pose of the robot in the global frame of the costmap
-   * @return pose of the robot in the global frame of the costmap
+   * @param pose output, written only on success
+   * @return true if the transform was available; false if the lookup failed
+   * (the caller must then skip whatever needed the pose)
    */
-  geometry_msgs::msg::Pose getRobotPose() const;
+  bool getRobotPose(geometry_msgs::msg::Pose& pose) const;
+
+  /**
+   * @brief Copy a (possibly clipped) partial costmap update into a costmap
+   * @details Rows are read with the stride of the update (msg.width) even when the
+   * right-hand columns are clipped. An update whose data is shorter than
+   * width * height is rejected without writing anything.
+   * @return true if the update was applied
+   */
+  static bool copyPartialUpdate(nav2_costmap_2d::Costmap2D& costmap,
+                                const map_msgs::msg::OccupancyGridUpdate& msg,
+                                const rclcpp::Logger& logger);
 
   /**
    * @brief Return a pointer to the "master" costmap which receives updates from
