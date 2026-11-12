@@ -47,8 +47,7 @@ ament_target_dependencies(${PROJECT_NAME}_node
     "sensor_msgs"
     "visualization_msgs"
     "geometry_msgs"
-    "std_srvs"
-    )
+    "std_srvs")
 
 target_link_libraries(${PROJECT_NAME}_node
     ${YDLIDAR_SDK_LIBRARIES})
@@ -66,8 +65,7 @@ ament_target_dependencies(${PROJECT_NAME}_client
     "sensor_msgs"
     "visualization_msgs"
     "geometry_msgs"
-    "std_srvs"
-    )
+    "std_srvs")
 
 #---------------------------------------------------------------------------------------
 # Install
