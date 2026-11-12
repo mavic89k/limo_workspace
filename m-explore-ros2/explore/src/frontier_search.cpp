@@ -12,10 +12,11 @@ using nav2_costmap_2d::FREE_SPACE;
 using nav2_costmap_2d::LETHAL_OBSTACLE;
 using nav2_costmap_2d::NO_INFORMATION;
 
-FrontierSearch::FrontierSearch(nav2_costmap_2d::Costmap2D* costmap,
-                               double potential_scale, double gain_scale,
-                               double min_frontier_size, rclcpp::Logger logger)
-  : costmap_(costmap)
+FrontierSearch::FrontierSearch(
+  nav2_costmap_2d::Costmap2D * costmap,
+  double potential_scale, double gain_scale,
+  double min_frontier_size, rclcpp::Logger logger)
+: costmap_(costmap)
   , potential_scale_(potential_scale)
   , gain_scale_(gain_scale)
   , min_frontier_size_(min_frontier_size)
@@ -31,13 +32,15 @@ FrontierSearch::searchFrom(geometry_msgs::msg::Point position)
   // Sanity check that robot is inside costmap bounds before searching
   unsigned int mx, my;
   if (!costmap_->worldToMap(position.x, position.y, mx, my)) {
-    RCLCPP_ERROR(logger_, "[FrontierSearch] Robot out of costmap bounds, cannot search for frontiers");
+    RCLCPP_ERROR(
+      logger_,
+      "[FrontierSearch] Robot out of costmap bounds, cannot search for frontiers");
     return frontier_list;
   }
 
   // make sure map is consistent and locked for duration of search
   std::lock_guard<nav2_costmap_2d::Costmap2D::mutex_t> lock(
-      *(costmap_->getMutex()));
+    *(costmap_->getMutex()));
 
   map_ = costmap_->getCharMap();
   size_x_ = costmap_->getSizeInCellsX();
@@ -77,7 +80,8 @@ FrontierSearch::searchFrom(geometry_msgs::msg::Point position)
         frontier_flag[nbr] = true;
         Frontier new_frontier = buildNewFrontier(nbr, pos, frontier_flag);
         if (new_frontier.size * costmap_->getResolution() >=
-            min_frontier_size_) {
+          min_frontier_size_)
+        {
           frontier_list.push_back(new_frontier);
         }
       }
@@ -85,19 +89,20 @@ FrontierSearch::searchFrom(geometry_msgs::msg::Point position)
   }
 
   // set costs of frontiers
-  for (auto& frontier : frontier_list) {
+  for (auto & frontier : frontier_list) {
     frontier.cost = frontierCost(frontier);
   }
   std::sort(
-      frontier_list.begin(), frontier_list.end(),
-      [](const Frontier& f1, const Frontier& f2) { return f1.cost < f2.cost; });
+    frontier_list.begin(), frontier_list.end(),
+    [](const Frontier & f1, const Frontier & f2) {return f1.cost < f2.cost;});
 
   return frontier_list;
 }
 
-Frontier FrontierSearch::buildNewFrontier(unsigned int initial_cell,
-                                          unsigned int reference,
-                                          std::vector<bool>& frontier_flag)
+Frontier FrontierSearch::buildNewFrontier(
+  unsigned int initial_cell,
+  unsigned int reference,
+  std::vector<bool> & frontier_flag)
 {
   // initialize frontier structure
   Frontier output;
@@ -150,8 +155,9 @@ Frontier FrontierSearch::buildNewFrontier(unsigned int initial_cell,
 
         // determine frontier's distance from robot, going by closest gridcell
         // to robot
-        double distance = sqrt(pow((double(reference_x) - double(wx)), 2.0) +
-                               pow((double(reference_y) - double(wy)), 2.0));
+        double distance = sqrt(
+          pow((double(reference_x) - double(wx)), 2.0) +
+          pow((double(reference_y) - double(wy)), 2.0));
         if (distance < output.min_distance) {
           output.min_distance = distance;
           output.middle.x = wx;
@@ -170,8 +176,9 @@ Frontier FrontierSearch::buildNewFrontier(unsigned int initial_cell,
   return output;
 }
 
-bool FrontierSearch::isNewFrontierCell(unsigned int idx,
-                                       const std::vector<bool>& frontier_flag)
+bool FrontierSearch::isNewFrontierCell(
+  unsigned int idx,
+  const std::vector<bool> & frontier_flag)
 {
   // check that cell is unknown and not already marked as frontier
   if (map_[idx] != NO_INFORMATION || frontier_flag[idx]) {
@@ -189,10 +196,10 @@ bool FrontierSearch::isNewFrontierCell(unsigned int idx,
   return false;
 }
 
-double FrontierSearch::frontierCost(const Frontier& frontier)
+double FrontierSearch::frontierCost(const Frontier & frontier)
 {
   return (potential_scale_ * frontier.min_distance *
-          costmap_->getResolution()) -
+         costmap_->getResolution()) -
          (gain_scale_ * frontier.size * costmap_->getResolution());
 }
 }  // namespace frontier_exploration

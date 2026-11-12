@@ -11,7 +11,7 @@
 /**************************************************************************/
 
 #include "astra_camera/utils.h"
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include <sensor_msgs/distortion_models.hpp>
 

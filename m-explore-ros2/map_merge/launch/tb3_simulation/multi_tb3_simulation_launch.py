@@ -105,7 +105,8 @@ def generate_launch_description():
     declare_known_init_poses_cmd = DeclareLaunchArgument(
         "known_init_poses",
         default_value="True",
-        description="Known initial poses of the robots. If so don't forget to declare them in the params.yaml file",
+        description=("Known initial poses of the robots. "
+                     "If so don't forget to declare them in the params.yaml file"),
     )
 
     # Declare the launch arguments

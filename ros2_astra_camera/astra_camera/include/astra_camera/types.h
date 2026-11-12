@@ -16,7 +16,7 @@
 #include <sensor_msgs/image_encodings.hpp>
 #include <std_srvs/srv/set_bool.hpp>
 
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 #include <openni2/OpenNI.h>
 

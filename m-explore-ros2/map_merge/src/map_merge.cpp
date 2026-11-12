@@ -46,25 +46,44 @@
 
 namespace map_merge
 {
-MapMerge::MapMerge() : Node("map_merge", rclcpp::NodeOptions()
-                                       .allow_undeclared_parameters(true)
-                                       .automatically_declare_parameters_from_overrides(true)),
-subscriptions_size_(0),
-logger_(this->get_logger())
+MapMerge::MapMerge()
+: Node("map_merge", rclcpp::NodeOptions()
+    .allow_undeclared_parameters(true)
+    .automatically_declare_parameters_from_overrides(true)),
+  subscriptions_size_(0),
+  logger_(this->get_logger())
 {
   std::string frame_id;
   std::string merged_map_topic;
 
-  if (!this->has_parameter("merging_rate")) this->declare_parameter<double>("merging_rate", 4.0);
-  if (!this->has_parameter("discovery_rate")) this->declare_parameter<double>("discovery_rate", 0.05);
-  if (!this->has_parameter("estimation_rate")) this->declare_parameter<double>("estimation_rate", 0.5);
-  if (!this->has_parameter("known_init_poses")) this->declare_parameter<bool>("known_init_poses", true);
-  if (!this->has_parameter("estimation_confidence")) this->declare_parameter<double>("estimation_confidence", 1.0);
-  if (!this->has_parameter("robot_map_topic")) this->declare_parameter<std::string>("robot_map_topic", "map");
-  if (!this->has_parameter("robot_map_updates_topic")) this->declare_parameter<std::string>("robot_map_updates_topic", "map_updates");
-  if (!this->has_parameter("robot_namespace")) this->declare_parameter<std::string>("robot_namespace", "");
-  if (!this->has_parameter("merged_map_topic")) this->declare_parameter<std::string>("merged_map_topic", "map");
-  if (!this->has_parameter("world_frame")) this->declare_parameter<std::string>("world_frame", "world");
+  if (!this->has_parameter("merging_rate")) {this->declare_parameter<double>("merging_rate", 4.0);}
+  if (!this->has_parameter("discovery_rate")) {
+    this->declare_parameter<double>("discovery_rate", 0.05);
+  }
+  if (!this->has_parameter("estimation_rate")) {
+    this->declare_parameter<double>("estimation_rate", 0.5);
+  }
+  if (!this->has_parameter("known_init_poses")) {
+    this->declare_parameter<bool>("known_init_poses", true);
+  }
+  if (!this->has_parameter("estimation_confidence")) {
+    this->declare_parameter<double>("estimation_confidence", 1.0);
+  }
+  if (!this->has_parameter("robot_map_topic")) {
+    this->declare_parameter<std::string>("robot_map_topic", "map");
+  }
+  if (!this->has_parameter("robot_map_updates_topic")) {
+    this->declare_parameter<std::string>("robot_map_updates_topic", "map_updates");
+  }
+  if (!this->has_parameter("robot_namespace")) {
+    this->declare_parameter<std::string>("robot_namespace", "");
+  }
+  if (!this->has_parameter("merged_map_topic")) {
+    this->declare_parameter<std::string>("merged_map_topic", "map");
+  }
+  if (!this->has_parameter("world_frame")) {
+    this->declare_parameter<std::string>("world_frame", "world");
+  }
 
   this->get_parameter("merging_rate", merging_rate_);
   this->get_parameter("discovery_rate", discovery_rate_);
@@ -81,19 +100,20 @@ logger_(this->get_logger())
   /* publishing */
   // Create a publisher using the QoS settings to emulate a ROS1 latched topic
   merged_map_publisher_ =
-      this->create_publisher<nav_msgs::msg::OccupancyGrid>(merged_map_topic,
-      rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
+    this->create_publisher<nav_msgs::msg::OccupancyGrid>(
+    merged_map_topic,
+    rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable());
 
   // Timers
   map_merging_timer_ = this->create_wall_timer(
     std::chrono::milliseconds((uint16_t)(1000.0 / merging_rate_)),
-    [this]() { mapMerging(); });
+    [this]() {mapMerging();});
   // execute right away to simulate the ros1 first while loop on a thread
   mapMerging();
 
   topic_subscribing_timer_ = this->create_wall_timer(
     std::chrono::milliseconds((uint16_t)(1000.0 / discovery_rate_)),
-    [this]() { topicSubscribing(); });
+    [this]() {topicSubscribing();});
 
   // For topicSubscribing() we need to spin briefly for the discovery to happen
   rclcpp::Rate r(100);
@@ -105,10 +125,10 @@ logger_(this->get_logger())
   }
   topicSubscribing();
 
-  if (!have_initial_poses_){
+  if (!have_initial_poses_) {
     pose_estimation_timer_ = this->create_wall_timer(
       std::chrono::milliseconds((uint16_t)(1000.0 / estimation_rate_)),
-      [this]() { poseEstimation(); });
+      [this]() {poseEstimation();});
     // execute right away to simulate the ros1 first while loop on a thread
     poseEstimation();
   }
@@ -131,11 +151,11 @@ void MapMerge::topicSubscribing()
   // ros::master::getTopics(topic_infos);
   std::map<std::string, std::vector<std::string>> topic_infos = this->get_topic_names_and_types();
 
-  for (const auto& topic_it : topic_infos) {
+  for (const auto & topic_it : topic_infos) {
     std::string topic_name = topic_it.first;
     std::vector<std::string> topic_types = topic_it.second;
     // iterate over all topic types
-    for (const auto& topic_type : topic_types) {
+    for (const auto & topic_type : topic_types) {
       // RCLCPP_INFO(logger_, "Topic: %s, type: %s", topic_name.c_str(), topic_type.c_str());
 
       // we check only map topic
@@ -150,12 +170,13 @@ void MapMerge::topicSubscribing()
       }
 
       if (have_initial_poses_ && !getInitPose(robot_name, init_pose)) {
-        RCLCPP_WARN(logger_, "Couldn't get initial position for robot [%s]\n"
-                "did you defined parameters map_merge/init_pose_[xyz]? in robot "
-                "namespace? If you want to run merging without known initial "
-                "positions of robots please set `known_init_poses` parameter "
-                "to false. See relevant documentation for details.",
-                robot_name.c_str());
+        RCLCPP_WARN(
+          logger_, "Couldn't get initial position for robot [%s]\n"
+          "did you defined parameters map_merge/init_pose_[xyz]? in robot "
+          "namespace? If you want to run merging without known initial "
+          "positions of robots please set `known_init_poses` parameter "
+          "to false. See relevant documentation for details.",
+          robot_name.c_str());
         continue;
       }
 
@@ -168,30 +189,31 @@ void MapMerge::topicSubscribing()
       }
 
       // no locking here. robots_ are used only in this procedure
-      MapSubscription& subscription = subscriptions_.front();
+      MapSubscription & subscription = subscriptions_.front();
       robots_.insert({robot_name, &subscription});
       subscription.initial_pose = init_pose;
 
       /* subscribe callbacks */
       map_topic = ros1_names::append(robot_name, robot_map_topic_);
       map_updates_topic =
-          ros1_names::append(robot_name, robot_map_updates_topic_);
+        ros1_names::append(robot_name, robot_map_updates_topic_);
       RCLCPP_INFO(logger_, "Subscribing to MAP topic: %s.", map_topic.c_str());
       auto map_qos = rclcpp::QoS(rclcpp::KeepLast(50)).transient_local().reliable();
       subscription.map_sub = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
-          map_topic, map_qos,
-          [this, &subscription](const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
-            fullMapUpdate(msg, subscription);
-          });
-      RCLCPP_INFO(logger_, "Subscribing to MAP updates topic: %s.",
-              map_updates_topic.c_str());
+        map_topic, map_qos,
+        [this, &subscription](const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
+          fullMapUpdate(msg, subscription);
+        });
+      RCLCPP_INFO(
+        logger_, "Subscribing to MAP updates topic: %s.",
+        map_updates_topic.c_str());
       subscription.map_updates_sub =
-          this->create_subscription<map_msgs::msg::OccupancyGridUpdate>(
-              map_updates_topic, map_qos,
-              [this, &subscription](
-                  const map_msgs::msg::OccupancyGridUpdate::SharedPtr msg) {
-                partialMapUpdate(msg, subscription);
-              });
+        this->create_subscription<map_msgs::msg::OccupancyGridUpdate>(
+        map_updates_topic, map_qos,
+        [this, &subscription](
+          const map_msgs::msg::OccupancyGridUpdate::SharedPtr msg) {
+          partialMapUpdate(msg, subscription);
+        });
     }
   }
 }
@@ -213,7 +235,7 @@ void MapMerge::mapMerging()
     {
       // We don't lock since because of ROS2 default executor only a callback can run
       // boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
-      for (auto& subscription : subscriptions_) {
+      for (auto & subscription : subscriptions_) {
         // std::lock_guard<std::mutex> s_lock(subscription.mutex);
 
         grids.push_back(subscription.readonly_map);
@@ -260,7 +282,7 @@ void MapMerge::poseEstimation()
   {
     // We don't lock since because of ROS2 default executor only a callback can run
     // boost::shared_lock<boost::shared_mutex> lock(subscriptions_mutex_);
-    for (auto& subscription : subscriptions_) {
+    for (auto & subscription : subscriptions_) {
       // std::lock_guard<std::mutex> s_lock(subscription.mutex);
       grids.push_back(subscription.readonly_map);
     }
@@ -272,8 +294,9 @@ void MapMerge::poseEstimation()
   std::lock_guard<std::mutex> lock(pipeline_mutex_);
   pipeline_.feed(grids.begin(), grids.end());
   // TODO allow user to change feature type
-  bool success = pipeline_.estimateTransforms(logger_,combine_grids::FeatureType::AKAZE,
-                               confidence_threshold_);
+  bool success = pipeline_.estimateTransforms(
+    logger_, combine_grids::FeatureType::AKAZE,
+    confidence_threshold_);
   // bool success = pipeline_.estimateTransforms(logger_, combine_grids::FeatureType::SURF,
   //                              confidence_threshold_);
   // bool success = pipeline_.estimateTransforms(logger_, combine_grids::FeatureType::ORB,
@@ -285,13 +308,14 @@ void MapMerge::poseEstimation()
 
 // void MapMerge::fullMapUpdate(const nav_msgs::OccupancyGrid::ConstPtr& msg,
 //                              MapSubscription& subscription)
-void MapMerge::fullMapUpdate(const nav_msgs::msg::OccupancyGrid::SharedPtr msg,
-                     MapSubscription& subscription)
+void MapMerge::fullMapUpdate(
+  const nav_msgs::msg::OccupancyGrid::SharedPtr msg,
+  MapSubscription & subscription)
 {
   RCLCPP_DEBUG(logger_, "received full map update");
   // RCLCPP_INFO(logger_, "received full map update");
   std::lock_guard<std::mutex> lock(subscription.mutex);
-  if (subscription.readonly_map){
+  if (subscription.readonly_map) {
     // ros2 header .stamp don't support > operator, we need to create them explicitly
     auto t1 = rclcpp::Time(subscription.readonly_map->header.stamp);
     auto t2 = rclcpp::Time(msg->header.stamp);
@@ -308,14 +332,16 @@ void MapMerge::fullMapUpdate(const nav_msgs::msg::OccupancyGrid::SharedPtr msg,
 // void MapMerge::partialMapUpdate(
 //     const map_msgs::OccupancyGridUpdate::ConstPtr& msg,
 //     MapSubscription& subscription)
-void MapMerge::partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::SharedPtr msg,
-                        MapSubscription& subscription)
+void MapMerge::partialMapUpdate(
+  const map_msgs::msg::OccupancyGridUpdate::SharedPtr msg,
+  MapSubscription & subscription)
 {
   RCLCPP_DEBUG(logger_, "received partial map update");
 
   if (msg->x < 0 || msg->y < 0) {
-    RCLCPP_ERROR(logger_, "negative coordinates, invalid update. x: %d, y: %d", msg->x,
-              msg->y);
+    RCLCPP_ERROR(
+      logger_, "negative coordinates, invalid update. x: %d, y: %d", msg->x,
+      msg->y);
     return;
   }
 
@@ -334,8 +360,9 @@ void MapMerge::partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::Shared
   }
 
   if (!readonly_map) {
-    RCLCPP_WARN(logger_, "received partial map update, but don't have any full map to "
-             "update. skipping.");
+    RCLCPP_WARN(
+      logger_, "received partial map update, but don't have any full map to "
+      "update. skipping.");
     return;
   }
 
@@ -349,10 +376,11 @@ void MapMerge::partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::Shared
   size_t grid_yn = map->info.height;
 
   if (xn > grid_xn || x0 > grid_xn || yn > grid_yn || y0 > grid_yn) {
-    RCLCPP_WARN(logger_, "received update doesn't fully fit into existing map, "
-             "only part will be copied. received: [%lu, %lu], [%lu, %lu] "
-             "map is: [0, %lu], [0, %lu]",
-             x0, xn, y0, yn, grid_xn, grid_yn);
+    RCLCPP_WARN(
+      logger_, "received update doesn't fully fit into existing map, "
+      "only part will be copied. received: [%lu, %lu], [%lu, %lu] "
+      "map is: [0, %lu], [0, %lu]",
+      x0, xn, y0, yn, grid_xn, grid_yn);
   }
 
   // update map with data
@@ -370,7 +398,7 @@ void MapMerge::partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::Shared
   {
     // store back updated map
     std::lock_guard<std::mutex> lock(subscription.mutex);
-    if (subscription.readonly_map){
+    if (subscription.readonly_map) {
       // ros2 header .stamp don't support > operator, we need to create them explicitly
       auto t1 = rclcpp::Time(subscription.readonly_map->header.stamp);
       auto t2 = rclcpp::Time(map->header.stamp);
@@ -384,7 +412,7 @@ void MapMerge::partialMapUpdate(const map_msgs::msg::OccupancyGridUpdate::Shared
   }
 }
 
-std::string MapMerge::robotNameFromTopic(const std::string& topic)
+std::string MapMerge::robotNameFromTopic(const std::string & topic)
 {
   return ros1_names::parentNamespace(topic);
 }
@@ -413,21 +441,26 @@ bool MapMerge::isRobotMapTopic(const std::string topic, std::string type)
 /*
  * Get robot's initial position
  */
-bool MapMerge::getInitPose(const std::string& name,
-                           geometry_msgs::msg::Transform& pose)
+bool MapMerge::getInitPose(
+  const std::string & name,
+  geometry_msgs::msg::Transform & pose)
 {
   std::string merging_namespace = ros1_names::append(name, "map_merge");
   double yaw = 0.0;
 
   bool success =
-      this->get_parameter(ros1_names::append(merging_namespace, "init_pose_x"),
-                      pose.translation.x) &&
-      this->get_parameter(ros1_names::append(merging_namespace, "init_pose_y"),
-                      pose.translation.y) &&
-      this->get_parameter(ros1_names::append(merging_namespace, "init_pose_z"),
-                      pose.translation.z) &&
-      this->get_parameter(ros1_names::append(merging_namespace, "init_pose_yaw"),
-                      yaw);
+    this->get_parameter(
+    ros1_names::append(merging_namespace, "init_pose_x"),
+    pose.translation.x) &&
+    this->get_parameter(
+    ros1_names::append(merging_namespace, "init_pose_y"),
+    pose.translation.y) &&
+    this->get_parameter(
+    ros1_names::append(merging_namespace, "init_pose_z"),
+    pose.translation.z) &&
+    this->get_parameter(
+    ros1_names::append(merging_namespace, "init_pose_yaw"),
+    yaw);
 
   tf2::Quaternion q;
   q.setEuler(0., 0., yaw);
@@ -437,7 +470,7 @@ bool MapMerge::getInitPose(const std::string& name,
 }
 }  // namespace map_merge
 
-int main(int argc, char** argv)
+int main(int argc, char ** argv)
 {
   rclcpp::init(argc, argv);
   // ROS1 code

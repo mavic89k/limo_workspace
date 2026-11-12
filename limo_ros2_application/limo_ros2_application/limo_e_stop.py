@@ -1,9 +1,10 @@
 import rclpy
 from rclpy.node import Node
 
-from std_msgs.msg import Bool 
+from std_msgs.msg import Bool
 from sensor_msgs.msg import LaserScan
-from math import pi, cos, sin
+from math import cos, sin
+
 
 class LimoEStop(Node):
 
@@ -19,7 +20,7 @@ class LimoEStop(Node):
         self.publisher_ = self.create_publisher(Bool, 'e_stop', 10)
 
         self.lidar_flag = False
-        
+
     def laser_callback(self, msg):
         estop = Bool()
         estop.data = False
@@ -33,11 +34,12 @@ class LimoEStop(Node):
             current_angle = self.angle_min + self.angle_increment*i
             cx = data * cos(current_angle)
             cy = data * sin(current_angle)
-            if 0.01 < cx <0.2 and -0.1 < cy < 0.1:
+            if 0.01 < cx < 0.2 and -0.1 < cy < 0.1:
                 estop.data = True
                 break
 
         self.publisher_.publish(estop)
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -51,6 +53,7 @@ def main(args=None):
     # when the garbage collector destroys the node object)
     limo_e_stop.destroy_node()
     rclpy.shutdown()
+
 
 if __name__ == '__main__':
     main()

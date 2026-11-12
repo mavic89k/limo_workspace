@@ -11,7 +11,7 @@
 /**************************************************************************/
 
 #include "astra_camera/device_listener.h"
-#include <magic_enum.hpp>
+#include <magic_enum/magic_enum.hpp>
 
 namespace astra_camera {
 

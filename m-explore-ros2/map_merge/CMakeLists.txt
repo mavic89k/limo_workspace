@@ -143,19 +143,30 @@ if(BUILD_TESTING)
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test
   )
   execute_process(
-    COMMAND bash download.sh ${CMAKE_BINARY_DIR}/2011-08-09-12-22-52.pgm ${base_url}/gmapping_maps/2011-08-09-12-22-52.pgm 3c2c38e7dec2b7a67f41069ab58badaa
+    COMMAND bash download.sh
+      ${CMAKE_BINARY_DIR}/2011-08-09-12-22-52.pgm
+      ${base_url}/gmapping_maps/2011-08-09-12-22-52.pgm
+      3c2c38e7dec2b7a67f41069ab58badaa
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test
   )
   execute_process(
-    COMMAND bash download.sh ${CMAKE_BINARY_DIR}/2012-01-28-11-12-01.pgm ${base_url}/gmapping_maps/2012-01-28-11-12-01.pgm 681e704044889c95e47b0c3aadd81f1e
+    COMMAND bash download.sh
+      ${CMAKE_BINARY_DIR}/2012-01-28-11-12-01.pgm
+      ${base_url}/gmapping_maps/2012-01-28-11-12-01.pgm
+      681e704044889c95e47b0c3aadd81f1e
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test
   )
 
   ament_add_gtest(test_merging_pipeline test/test_merging_pipeline.cpp)
   # ensure that test data are downloaded before we run tests
-  # add_dependencies(test_merging_pipeline ${PROJECT_NAME}_map00.pgm ${PROJECT_NAME}_map05.pgm ${PROJECT_NAME}_2011-08-09-12-22-52.pgm ${PROJECT_NAME}_2012-01-28-11-12-01.pgm)
+  # add_dependencies(test_merging_pipeline
+  #   ${PROJECT_NAME}_map00.pgm
+  #   ${PROJECT_NAME}_map05.pgm
+  #   ${PROJECT_NAME}_2011-08-09-12-22-52.pgm
+  #   ${PROJECT_NAME}_2012-01-28-11-12-01.pgm
+  # )
   target_link_libraries(test_merging_pipeline combine_grids ${catkin_LIBRARIES})
-  
+
 endif()
 
 

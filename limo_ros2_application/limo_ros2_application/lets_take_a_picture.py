@@ -1,10 +1,8 @@
 import rclpy
 from rclpy.node import Node
 
-import os
 
 import cv2
-import numpy as np
 from cv_bridge import CvBridge
 
 from sensor_msgs.msg import Image
@@ -26,11 +24,11 @@ class LetsTakeAPicture(Node):
 
         # subscribe camera data
         self.subscription = self.create_subscription(
-                            Image,
-                            '/camera/color/image_raw', 
-                            self.image_callback, 
-                            rclpy.qos.qos_profile_sensor_data)
-        self.subscription # to prevent from warning
+            Image,
+            '/camera/color/image_raw',
+            self.image_callback,
+            rclpy.qos.qos_profile_sensor_data)
+        self.subscription  # to prevent from warning
 
         # to syncronize subscriber and service server
         self.sub_flag = False
@@ -40,20 +38,20 @@ class LetsTakeAPicture(Node):
         self.picture_directory = package_directory + '/picture/'
         self.picture_index = 1
 
-
     def take_picture(self, request, response):
-        if self.sub_flag and request.kimchi: # if all goes well save picture at package + picture directory
+        # if all goes well save picture at package + picture directory
+        if self.sub_flag and request.kimchi:
             response.picture = f'{self.picture_directory}{self.picture_index}_pic.png'
-            cv2.imwrite(response.picture,self.image_)
+            cv2.imwrite(response.picture, self.image_)
             self.picture_index = self.picture_index + 1
         else:
             response.picture = 'Did you execute the camera driver?'
         return response
 
     def image_callback(self, msg):
-        self.image_ = self.br.imgmsg_to_cv2(msg, 'bgr8') # subscribe image and change to cv type
+        self.image_ = self.br.imgmsg_to_cv2(msg, 'bgr8')  # subscribe image and change to cv type
         self.sub_flag = True
-        
+
 
 def main(args=None):
     rclpy.init(args=args)
