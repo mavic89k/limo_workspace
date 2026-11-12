@@ -1,0 +1,58 @@
+name: Syntax checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install YAML parser
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-yaml
+      - name: Check Python, XML and YAML syntax
+        run: |
+          /usr/bin/python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import subprocess
+          import xml.etree.ElementTree as ET
+
+          import yaml
+
+          files = subprocess.check_output(["git", "ls-files", "-z"])
+          counts = {"Python": 0, "XML": 0, "YAML": 0}
+          errors = 0
+          for filename in files.split(b"\0"):
+              if not filename:
+                  continue
+              path = Path(os.fsdecode(filename))
+              try:
+                  if path.suffix == ".py":
+                      counts["Python"] += 1
+                      compile(path.read_bytes(), str(path), "exec")
+                  elif path.suffix in {".xml", ".xacro"}:
+                      counts["XML"] += 1
+                      ET.parse(path)
+                  elif path.suffix in {".yaml", ".yml"}:
+                      counts["YAML"] += 1
+                      with path.open("rb") as stream:
+                          for _ in yaml.compose_all(stream, Loader=yaml.SafeLoader):
+                              pass
+              except (OSError, SyntaxError, ValueError, ET.ParseError, yaml.YAMLError) as error:
+                  print(f"{path}: {error}", flush=True)
+                  errors += 1
+
+          for language, count in counts.items():
+              print(f"{language}: {count} file(s) checked")
+          raise SystemExit(1 if errors else 0)
+          PY
