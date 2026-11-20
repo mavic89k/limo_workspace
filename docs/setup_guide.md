@@ -28,7 +28,7 @@ alias stop='ros2 topic pub --once /cmd_vel geometry_msgs/msg/Twist "{linear: {x:
 자율 탐색(`explore_lite`)이 완료되거나 중단되면 즉시 지도를 저장한다.
 
 ```bash
-ros2 run nav2_map_server map_saver_cli -f ~/capstone_ws/src/limo_capstone/maps/MC3F_room_map
+ros2 run nav2_map_server map_saver_cli -f ~/capstone_ws/src/limo_capstone_ros/maps/MC3F_room_map
 ```
 
 ## 5. Nav2 정적 지도 주행 (`limo_nav2.launch.py`)

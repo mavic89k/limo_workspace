@@ -21,7 +21,7 @@
 ## 2026-11-06 런치/설정 파일 주석 추가 및 Nav2 파라미터 적용 수정
 
 ### 1. 상세 주석 추가 (동작 변경 없음)
-* 대상: `limo_capstone/launch/*.py` (`limo_light`, `limo_nav2`, `limo_rtabmap`, `limo_auto_mapping`), `limo_capstone/config/*.yaml` (`explore.yaml`, `nav2_explore_params.yaml`).
+* 대상: `limo_capstone_ros/launch/*.py` (`limo_light`, `limo_nav2`, `limo_rtabmap`, `limo_auto_mapping`), `limo_capstone_ros/config/*.yaml` (`explore.yaml`, `nav2_explore_params.yaml`).
 * `slam_params.yaml`은 이미 상세 주석이 있어 수정하지 않음.
 * 런치 파일: 파일 상단에 용도/사전 조건, 각 노드·인자별 설명 추가.
 * `nav2_explore_params.yaml`: 구역(AMCL, Controller, Costmap 등)별 헤더와 파라미터별 인라인 주석 추가. 기존 주석이 있던 줄은 뒤에 ` | 설명` 형태로 덧붙임.

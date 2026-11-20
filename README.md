@@ -110,7 +110,7 @@ limo_workspace/                    # = ~/capstone_ws/src
 │   ├── 2026_10_15                 # 개발 일지 (2026-10-15)
 │   └── 2026_10_21                 # 개발 일지 (2026-10-21)
 │
-├── limo_capstone/                 # ★ 캡스톤 메인 패키지 (ament_python)
+├── limo_capstone_ros/                 # ★ 캡스톤 메인 패키지 (ament_python)
 │   ├── setup.py                   # launch/config/maps를 share 디렉터리로 설치
 │   ├── package.xml                # 패키지 메타데이터
 │   ├── launch/
@@ -242,7 +242,7 @@ ros2 launch limo_capstone limo_auto_mapping.launch.py
 - 로봇이 프론티어(알려진 영역과 미지 영역의 경계)를 찾아 스스로 이동하며 `/map`을 작성합니다.
 - 탐색이 끝나거나 중단되면 즉시 지도를 저장합니다.
   ```bash
-  ros2 run nav2_map_server map_saver_cli -f ~/capstone_ws/src/limo_capstone/maps/MC3F_room_map
+  ros2 run nav2_map_server map_saver_cli -f ~/capstone_ws/src/limo_capstone_ros/maps/MC3F_room_map
   ```
 
 #### 2-B. RTAB-Map 융합 SLAM (RGB-D + 2D LiDAR)
@@ -254,7 +254,7 @@ ros2 launch limo_capstone limo_rtabmap.launch.py
 
 #### 2-C. (선택) 저장된 지도 기반 Nav2 주행
 ```bash
-ros2 launch limo_capstone limo_nav2.launch.py map:=$HOME/capstone_ws/src/limo_capstone/maps/map_limo.yaml
+ros2 launch limo_capstone limo_nav2.launch.py map:=$HOME/capstone_ws/src/limo_capstone_ros/maps/map_limo.yaml
 ```
 - `map` 인자를 생략하면 `maps/map_limo.yaml`이 사용됩니다. 실행 후 RViz2의 **2D Pose Estimate**로 초기 위치를 지정해야 합니다.
 
