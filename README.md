@@ -212,7 +212,16 @@ ros2 launch limo_capstone limo_nav2.launch.py map:="$HOME/capstone_ws/src/limo_c
 환경 설정은 [설치 가이드](docs/setup_guide.md), 파라미터 변경 이유는 [튜닝 이력](docs/tuning_log.md)과 [결정 기록](docs/DECISIONS.md)에 있습니다. 작업 전에는 [작업트리 현황](docs/WORKTREES.md)과 [개발 지침](docs/AGENTS.md)을 확인합니다.
 
 | 브랜치 | 역할 | 규칙 |
-|
+|--------|------|------|
+| `main` | **검증 완료된 릴리즈 브랜치** | 직접 push 금지, **Pull Request 승인 필수** |
+| `dev` | **실물 주행 및 기능 개발 브랜치** | 실물 LIMO 주행 테스트 후 기능 단위로 커밋 |
+
+```text
+dev (개발·실물 주행 검증) ──── Pull Request (리뷰/승인) ────▶ main (릴리즈)
+```
+
+- 커밋 메시지는 `type(scope): 설명` 형식을 권장합니다. (예: `fix(limo_capstone): limo_nav2 런치에 params_file 적용`, `docs: 튜닝 일지 갱신`)
+- 실물 주행으로 검증되지 않은 변경은 `main`에 병합하지 않습니다.
 
 ## 8. 라이선스
 
