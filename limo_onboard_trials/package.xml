@@ -4,7 +4,6 @@
   <description>Separate onboard trials of middle exploration, RPP and recovery BT.</description>
   <maintainer email="maintainer@example.invalid">Capstone maintainers</maintainer>
   <license>Apache-2.0</license>
-  <buildtool_depend>ament_python</buildtool_depend>
   <exec_depend>launch_ros</exec_depend>
   <exec_depend>ament_index_python</exec_depend>
   <exec_depend>python3-yaml</exec_depend>

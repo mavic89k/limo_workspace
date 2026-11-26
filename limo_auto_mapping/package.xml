@@ -4,7 +4,6 @@
 <description>Action supervisor for frontier exploration and resumable SLAM.</description>
 <maintainer email="maintainer@example.invalid">Capstone maintainers</maintainer>
 <license>Apache-2.0</license>
-<buildtool_depend>ament_python</buildtool_depend>
 <exec_depend>rclpy</exec_depend>
 <exec_depend>limo_capstone</exec_depend>
 <exec_depend>limo_mapping_interfaces</exec_depend>

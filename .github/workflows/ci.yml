@@ -80,8 +80,7 @@ jobs:
             ros-humble-ament-cmake-cpplint ros-humble-ament-cmake-lint-cmake \
             ros-humble-ament-cmake-uncrustify
           rosdep update --rosdistro humble
-          # ament_python is a build type handled by colcon, with no Humble rosdep key.
-          rosdep install --from-paths . --ignore-src --rosdistro humble -y --skip-keys ament_python
+          rosdep install --from-paths . --ignore-src --rosdistro humble -y
       - name: Build YDLidar SDK and libuvc
         run: |
           git init "$RUNNER_TEMP/ydlidar-sdk"
